@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  homes     Home[]
+  sessions  Session[]
+  createdAt DateTime  @default(now())
+}
+
+model Home {
+  id        String   @id @default(uuid())
+  name      String
+  location  String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  meters    Meter[]
+  createdAt DateTime @default(now())
+}
+
+model Meter {
+  id          String @id @default(uuid())
+  meterNumber String
+  homeId      String
+  home        Home   @relation(fields: [homeId], references: [id])
+  bills       Bill[]
+}
+
+model Bill {
+  id              String   @id @default(uuid())
+  meterId         String
+  meter           Meter    @relation(fields: [meterId], references: [id])
+  month           Int
+  year            Int
+  unitsConsumed   Float
+  amount          Float
+  previousReading Float
+  currentReading  Float
+  billDate        DateTime
+  createdAt       DateTime @default(now())
+}
+model Session {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  expiresAt DateTime @default(dbgenerated("(now() + interval '7 days')"))
+
+  createdAt DateTime @default(now())
+}
