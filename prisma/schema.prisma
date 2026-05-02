@@ -26,11 +26,17 @@ model Home {
 }
 
 model Meter {
-  id          String @id @default(uuid())
-  meterNumber String
+  id          String   @id @default(uuid())
+
+  meterNumber String   @unique
+  nickname    String?
+
   homeId      String
-  home        Home   @relation(fields: [homeId], references: [id])
+  home        Home     @relation(fields: [homeId], references: [id])
+
   bills       Bill[]
+
+  createdAt   DateTime @default(now())
 }
 
 model Bill {
