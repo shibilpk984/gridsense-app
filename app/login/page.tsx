@@ -25,7 +25,7 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) return alert(data.error || "Login failed");
-      window.location.href = "/dashboard";
+      window.location.href = "/main/dashboard";
     } catch (error) {
       alert("Something went wrong");
     } finally {

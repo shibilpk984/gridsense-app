@@ -12,7 +12,7 @@ export default function Navbar() {
 
   const isDashboard =
     pathname ===
-    "/dashboard";
+    "/main/dashboard";
 
   const buttonText =
     isDashboard
@@ -21,8 +21,8 @@ export default function Navbar() {
 
   const buttonLink =
     isDashboard
-      ? "/homes"
-      : "/dashboard";
+      ? "/main/homes"
+      : "/main/dashboard";
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/5 bg-[#090909]/80 backdrop-blur-2xl">

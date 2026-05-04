@@ -6,7 +6,7 @@ export default async function Home() {
   const session = cookieStore.get("session")?.value;
 
   if (session) {
-    redirect("/dashboard");
+    redirect("/main/dashboard");
   } else {
     redirect("/login");
   }

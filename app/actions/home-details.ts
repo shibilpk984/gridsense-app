@@ -66,8 +66,8 @@ export async function updateHome(
       },
     });
 
-    revalidatePath("/homes");
-    revalidatePath(`/homes/${homeId}`);
+    revalidatePath("/main/homes");
+    revalidatePath(`/main/homes/${homeId}`);
 
     return {
       success: true,
@@ -114,7 +114,7 @@ export async function deleteHome(
     },
   });
 
-  revalidatePath("/homes");
+  revalidatePath("/main/homes");
 
-  redirect("/homes");
+  redirect("/main/homes");
 }

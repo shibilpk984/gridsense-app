@@ -10,8 +10,8 @@ type State = {
   success?: boolean;
 };
 
-export async function createBill(
-  homeId: string,
+export async function updateBill(
+  billId: string,
   prevState: State,
   formData: FormData
 ): Promise<State> {
@@ -25,17 +25,28 @@ export async function createBill(
       };
     }
 
-    const home =
-      await prisma.home.findFirst({
+    const bill =
+      await prisma.bill.findFirst({
         where: {
-          id: homeId,
-          userId: user.id,
+          id: billId,
+
+          meter: {
+            home: {
+              userId:
+                user.id,
+            },
+          },
+        },
+
+        include: {
+          meter: true,
         },
       });
 
-    if (!home) {
+    if (!bill) {
       return {
-        error: "Home not found",
+        error:
+          "Bill not found",
       };
     }
 
@@ -65,60 +76,35 @@ export async function createBill(
       formData.get("year")
     );
 
-    const billDate =
-      formData
-        .get("billDate")
-        ?.toString() || "";
-
-    if (
-      Number.isNaN(
-        previousReading
-      ) ||
-      Number.isNaN(
-        currentReading
-      ) ||
-      Number.isNaN(amount)
-    ) {
-      return {
-        error:
-          "Invalid bill values",
-      };
-    }
-
-    if (
-      previousReading < 0 ||
-      currentReading < 0 ||
-      amount < 0
-    ) {
-      return {
-        error:
-          "Values cannot be negative",
-      };
-    }
-
     if (
       currentReading <=
       previousReading
     ) {
       return {
         error:
-          "Current reading must be greater than previous reading",
+          "Current reading must be greater",
       };
     }
 
     const existingBill =
       await prisma.bill.findFirst({
         where: {
-          homeId,
+          meterId:
+            bill.meterId,
+
           month,
           year,
+
+          NOT: {
+            id: bill.id,
+          },
         },
       });
 
     if (existingBill) {
       return {
         error:
-          "A bill for this month already exists",
+          "Bill already exists for this month",
       };
     }
 
@@ -126,31 +112,23 @@ export async function createBill(
       currentReading -
       previousReading;
 
-    await prisma.bill.create({
-      data: {
-        homeId,
+    await prisma.bill.update({
+      where: {
+        id: bill.id,
+      },
 
+      data: {
         previousReading,
         currentReading,
-
-        unitsConsumed,
-
         amount,
-
         month,
         year,
-
-        billDate:
-          new Date(billDate),
+        unitsConsumed,
       },
     });
 
     revalidatePath(
-      `/main/homes/${homeId}`
-    );
-
-    revalidatePath(
-      "/main/dashboard"
+      `/main/homes/${bill.meter.homeId}/meters/${bill.meterId}`
     );
 
     return {
@@ -161,7 +139,7 @@ export async function createBill(
 
     return {
       error:
-        "Failed to create bill",
+        "Failed to update bill",
     };
   }
 }

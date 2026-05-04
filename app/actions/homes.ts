@@ -17,7 +17,6 @@ export async function createHome(
   try {
     const user = await getCurrentUser();
 
-    // Secure auth validation
     if (!user) {
       return {
         error: "Unauthorized",
@@ -34,7 +33,6 @@ export async function createHome(
       ?.toString()
       .trim();
 
-    // Validation
     if (!name || name.length < 2) {
       return {
         error:
@@ -59,17 +57,28 @@ export async function createHome(
       };
     }
 
-    // Create home securely
-    await prisma.home.create({
+    // Create home first
+    const home =
+      await prisma.home.create({
+        data: {
+          name,
+          location,
+          userId: user.id,
+        },
+      });
+
+    // Auto create hidden meter
+    await prisma.meter.create({
       data: {
-        name,
-        location,
-        userId: user.id,
+        homeId: home.id,
+
+        meterNumber: `AUTO-${Date.now()}`,
+
+        nickname: "Main Meter",
       },
     });
 
-    // Refresh homes page
-    revalidatePath("/homes");
+    revalidatePath("/main/homes");
 
     return {
       success: true,
