@@ -21,16 +21,13 @@ export async function deleteBill(
         where: {
           id: billId,
 
-          meter: {
-            home: {
-              userId:
-                user.id,
-            },
+          home: {
+            userId: user.id,
           },
         },
 
         include: {
-          meter: true,
+          home: true,
         },
       });
 
@@ -45,7 +42,19 @@ export async function deleteBill(
     });
 
     revalidatePath(
-      `/main/homes/${bill.meter.homeId}/meters/${bill.meterId}`
+      `/main/homes/${bill.homeId}`
+    );
+
+    revalidatePath(
+      "/main/bills"
+    );
+
+    revalidatePath(
+      "/main/analytics"
+    );
+
+    revalidatePath(
+      "/main/dashboard"
     );
   } catch (error) {
     console.error(error);
