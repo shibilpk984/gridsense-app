@@ -23,7 +23,11 @@ model Home {
   location  String?
 
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(
+    fields: [userId],
+    references: [id],
+    onDelete: Cascade
+  )
 
   bills     Bill[]
 
@@ -34,7 +38,11 @@ model Bill {
   id              String   @id @default(uuid())
 
   homeId          String
-  home            Home     @relation(fields: [homeId], references: [id])
+  home            Home     @relation(
+    fields: [homeId],
+    references: [id],
+    onDelete: Cascade
+  )
 
   month           Int
   year            Int
@@ -55,9 +63,13 @@ model Session {
   token     String   @unique
 
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(
+    fields: [userId],
+    references: [id],
+    onDelete: Cascade
+  )
 
-  expiresAt DateTime @default(dbgenerated("(now() + interval '7 days')"))
+  expiresAt DateTime
 
   createdAt DateTime @default(now())
 }

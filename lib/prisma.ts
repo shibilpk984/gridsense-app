@@ -2,20 +2,27 @@ import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-const globalForPrisma = global as unknown as {
-  prisma: PrismaClient;
+const globalForPrisma = globalThis as unknown as {
+  prisma?: PrismaClient;
 };
 
-const connectionString = "postgresql://postgres:postgres@localhost:5432/gridsense";
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error(
+    "DATABASE_URL environment variable is not configured"
+  );
+}
 
 const pool = new Pool({
   connectionString,
+  max: 10,
 });
 
 const adapter = new PrismaPg(pool);
 
 export const prisma =
-  globalForPrisma.prisma ||
+  globalForPrisma.prisma ??
   new PrismaClient({
     adapter,
   });

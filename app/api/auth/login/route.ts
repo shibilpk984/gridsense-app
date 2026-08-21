@@ -3,51 +3,74 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { cookies } from "next/headers";
 
+const SESSION_DURATION_SECONDS =
+  60 * 60 * 24 * 7;
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, password } = body;
 
-    // Validation
+    const email =
+      typeof body.email === "string"
+        ? body.email.trim().toLowerCase()
+        : "";
+
+    const password =
+      typeof body.password === "string"
+        ? body.password
+        : "";
+
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Email and password required" },
+        {
+          error:
+            "Email and password required",
+        },
         { status: 400 }
       );
     }
 
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const user =
+      await prisma.user.findUnique({
+        where: {
+          email,
+        },
+      });
 
     if (!user) {
       return NextResponse.json(
-        { error: "Invalid credentials" },
+        {
+          error:
+            "Invalid credentials",
+        },
         { status: 401 }
       );
     }
 
-    // Verify password
-    const isValid = await bcrypt.compare(password, user.password);
+    const isValid =
+      await bcrypt.compare(
+        password,
+        user.password
+      );
 
     if (!isValid) {
       return NextResponse.json(
-        { error: "Invalid credentials" },
+        {
+          error:
+            "Invalid credentials",
+        },
         { status: 401 }
       );
     }
 
-    // ✅ Generate secure random session token
     const sessionToken =
-      crypto.randomUUID() + crypto.randomUUID();
+      `${crypto.randomUUID()}${crypto.randomUUID()}`;
 
-    // ✅ Explicit session expiry (7 days)
     const expiresAt = new Date(
-      Date.now() + 1000 * 60 * 60 * 24 * 7
+      Date.now() +
+        SESSION_DURATION_SECONDS * 1000
     );
 
-    // ✅ Save session in DB
     await prisma.session.create({
       data: {
         token: sessionToken,
@@ -56,25 +79,44 @@ export async function POST(req: Request) {
       },
     });
 
-    // ✅ Store token in secure cookie
-    const cookieStore = await cookies();
+    const cookieStore =
+      await cookies();
 
-    cookieStore.set("session", sessionToken, {
-      httpOnly: true,
-      secure: false, // true in production HTTPS
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
+    cookieStore.set(
+      "session",
+      sessionToken,
+      {
+        httpOnly: true,
+
+        // HTTPS production only
+        secure:
+          process.env.NODE_ENV ===
+          "production",
+
+        sameSite: "lax",
+
+        path: "/",
+
+        maxAge:
+          SESSION_DURATION_SECONDS,
+      }
+    );
 
     return NextResponse.json({
-      message: "Login successful",
+      message:
+        "Login successful",
     });
   } catch (error) {
-    console.error(error);
+    console.error(
+      "Login error:",
+      error
+    );
 
     return NextResponse.json(
-      { error: "Something went wrong" },
+      {
+        error:
+          "Something went wrong",
+      },
       { status: 500 }
     );
   }
