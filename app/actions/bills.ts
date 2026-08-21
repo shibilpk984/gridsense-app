@@ -16,8 +16,11 @@ export async function createBill(
   formData: FormData
 ): Promise<State> {
   try {
-    const user =
-      await getCurrentUser();
+    // ----------------------------------------
+    // 1. Authentication
+    // ----------------------------------------
+
+    const user = await getCurrentUser();
 
     if (!user) {
       return {
@@ -25,13 +28,16 @@ export async function createBill(
       };
     }
 
-    const home =
-      await prisma.home.findFirst({
-        where: {
-          id: homeId,
-          userId: user.id,
-        },
-      });
+    // ----------------------------------------
+    // 2. Verify that the home belongs to user
+    // ----------------------------------------
+
+    const home = await prisma.home.findFirst({
+      where: {
+        id: homeId,
+        userId: user.id,
+      },
+    });
 
     if (!home) {
       return {
@@ -39,19 +45,17 @@ export async function createBill(
       };
     }
 
-    const previousReading =
-      Number(
-        formData.get(
-          "previousReading"
-        )
-      );
+    // ----------------------------------------
+    // 3. Read form values
+    // ----------------------------------------
 
-    const currentReading =
-      Number(
-        formData.get(
-          "currentReading"
-        )
-      );
+    const previousReading = Number(
+      formData.get("previousReading")
+    );
+
+    const currentReading = Number(
+      formData.get("currentReading")
+    );
 
     const amount = Number(
       formData.get("amount")
@@ -65,25 +69,31 @@ export async function createBill(
       formData.get("year")
     );
 
-    const billDate =
-      formData
-        .get("billDate")
-        ?.toString() || "";
+    const billDateValue = formData
+      .get("billDate")
+      ?.toString()
+      .trim();
+
+    // ----------------------------------------
+    // 4. Validate required values
+    // ----------------------------------------
 
     if (
-      Number.isNaN(
-        previousReading
-      ) ||
-      Number.isNaN(
-        currentReading
-      ) ||
-      Number.isNaN(amount)
+      !Number.isFinite(previousReading) ||
+      !Number.isFinite(currentReading) ||
+      !Number.isFinite(amount) ||
+      !Number.isInteger(month) ||
+      !Number.isInteger(year) ||
+      !billDateValue
     ) {
       return {
-        error:
-          "Invalid bill values",
+        error: "Invalid bill values",
       };
     }
+
+    // ----------------------------------------
+    // 5. Validate ranges
+    // ----------------------------------------
 
     if (
       previousReading < 0 ||
@@ -91,20 +101,51 @@ export async function createBill(
       amount < 0
     ) {
       return {
-        error:
-          "Values cannot be negative",
+        error: "Values cannot be negative",
       };
     }
 
-    if (
-      currentReading <=
-      previousReading
-    ) {
+    if (currentReading <= previousReading) {
       return {
         error:
           "Current reading must be greater than previous reading",
       };
     }
+
+    if (month < 1 || month > 12) {
+      return {
+        error: "Invalid month",
+      };
+    }
+
+    if (year < 2000 || year > 2100) {
+      return {
+        error: "Invalid year",
+      };
+    }
+
+    // ----------------------------------------
+    // 6. Validate bill date
+    // ----------------------------------------
+
+    const billDate = new Date(billDateValue);
+
+    if (Number.isNaN(billDate.getTime())) {
+      return {
+        error: "Invalid bill date",
+      };
+    }
+
+    // ----------------------------------------
+    // 7. Calculate consumption
+    // ----------------------------------------
+
+    const unitsConsumed =
+      currentReading - previousReading;
+
+    // ----------------------------------------
+    // 8. Prevent duplicate bill
+    // ----------------------------------------
 
     const existingBill =
       await prisma.bill.findFirst({
@@ -122,9 +163,9 @@ export async function createBill(
       };
     }
 
-    const unitsConsumed =
-      currentReading -
-      previousReading;
+    // ----------------------------------------
+    // 9. Create bill
+    // ----------------------------------------
 
     await prisma.bill.create({
       data: {
@@ -140,10 +181,13 @@ export async function createBill(
         month,
         year,
 
-        billDate:
-          new Date(billDate),
+        billDate,
       },
     });
+
+    // ----------------------------------------
+    // 10. Revalidate affected pages
+    // ----------------------------------------
 
     revalidatePath(
       `/main/homes/${homeId}`
@@ -153,15 +197,29 @@ export async function createBill(
       "/main/dashboard"
     );
 
+    revalidatePath(
+      "/main/bills"
+    );
+
+    revalidatePath(
+      "/main/analytics"
+    );
+
+    // ----------------------------------------
+    // 11. Success
+    // ----------------------------------------
+
     return {
       success: true,
     };
   } catch (error) {
-    console.error(error);
+    console.error(
+      "createBill error:",
+      error
+    );
 
     return {
-      error:
-        "Failed to create bill",
+      error: "Failed to create bill",
     };
   }
 }
