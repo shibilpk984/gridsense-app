@@ -16,8 +16,7 @@ export async function updateBill(
   formData: FormData
 ): Promise<State> {
   try {
-    const user =
-      await getCurrentUser();
+    const user = await getCurrentUser();
 
     if (!user) {
       return {
@@ -25,44 +24,31 @@ export async function updateBill(
       };
     }
 
-    const bill =
-      await prisma.bill.findFirst({
-        where: {
-          id: billId,
-
-          meter: {
-            home: {
-              userId:
-                user.id,
-            },
-          },
+    const bill = await prisma.bill.findFirst({
+      where: {
+        id: billId,
+        home: {
+          userId: user.id,
         },
-
-        include: {
-          meter: true,
-        },
-      });
+      },
+      include: {
+        home: true,
+      },
+    });
 
     if (!bill) {
       return {
-        error:
-          "Bill not found",
+        error: "Bill not found",
       };
     }
 
-    const previousReading =
-      Number(
-        formData.get(
-          "previousReading"
-        )
-      );
+    const previousReading = Number(
+      formData.get("previousReading")
+    );
 
-    const currentReading =
-      Number(
-        formData.get(
-          "currentReading"
-        )
-      );
+    const currentReading = Number(
+      formData.get("currentReading")
+    );
 
     const amount = Number(
       formData.get("amount")
@@ -77,46 +63,57 @@ export async function updateBill(
     );
 
     if (
-      currentReading <=
-      previousReading
+      Number.isNaN(previousReading) ||
+      Number.isNaN(currentReading) ||
+      Number.isNaN(amount) ||
+      Number.isNaN(month) ||
+      Number.isNaN(year)
     ) {
       return {
-        error:
-          "Current reading must be greater",
+        error: "Invalid bill values",
       };
     }
 
-    const existingBill =
-      await prisma.bill.findFirst({
-        where: {
-          meterId:
-            bill.meterId,
+    if (
+      previousReading < 0 ||
+      currentReading < 0 ||
+      amount < 0
+    ) {
+      return {
+        error: "Values cannot be negative",
+      };
+    }
 
-          month,
-          year,
+    if (currentReading <= previousReading) {
+      return {
+        error: "Current reading must be greater",
+      };
+    }
 
-          NOT: {
-            id: bill.id,
-          },
+    const existingBill = await prisma.bill.findFirst({
+      where: {
+        homeId: bill.homeId,
+        month,
+        year,
+        NOT: {
+          id: bill.id,
         },
-      });
+      },
+    });
 
     if (existingBill) {
       return {
-        error:
-          "Bill already exists for this month",
+        error: "Bill already exists for this month",
       };
     }
 
     const unitsConsumed =
-      currentReading -
-      previousReading;
+      currentReading - previousReading;
 
     await prisma.bill.update({
       where: {
         id: bill.id,
       },
-
       data: {
         previousReading,
         currentReading,
@@ -128,8 +125,10 @@ export async function updateBill(
     });
 
     revalidatePath(
-      `/main/homes/${bill.meter.homeId}/meters/${bill.meterId}`
+      `/main/homes/${bill.homeId}`
     );
+
+    revalidatePath("/main/dashboard");
 
     return {
       success: true,
@@ -138,8 +137,7 @@ export async function updateBill(
     console.error(error);
 
     return {
-      error:
-        "Failed to update bill",
+      error: "Failed to update bill",
     };
   }
 }

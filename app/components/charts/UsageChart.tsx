@@ -154,12 +154,10 @@ export default function UsageChart({
               padding:
                 "10px 14px",
             }}
-            formatter={(
-              value: number
-            ) => [
-              `${value} kWh`,
-              "Usage",
-            ]}
+           formatter={(value) => [
+  `${value ?? 0} kWh`,
+  "Usage",
+]}
             labelFormatter={(
               label,
               payload

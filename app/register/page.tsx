@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   motion,
   AnimatePresence,
+  type Variants,
 } from "framer-motion";
 import {
   ArrowRight,
@@ -67,14 +68,18 @@ export default function RegisterPage() {
 
       window.location.href = "/login";
     } catch (error) {
+      console.error(error);
       alert("Something went wrong");
     } finally {
       setLoading(false);
     }
   }
 
-  const fadeUp = {
-    hidden: { opacity: 0, y: 20 },
+  const fadeUp: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 20,
+    },
     visible: {
       opacity: 1,
       y: 0,

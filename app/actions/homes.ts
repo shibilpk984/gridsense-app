@@ -35,46 +35,27 @@ export async function createHome(
 
     if (!name || name.length < 2) {
       return {
-        error:
-          "Home name must be at least 2 characters",
+        error: "Home name must be at least 2 characters",
       };
     }
 
     if (name.length > 50) {
       return {
-        error:
-          "Home name is too long",
+        error: "Home name is too long",
       };
     }
 
-    if (
-      location &&
-      location.length > 100
-    ) {
+    if (location && location.length > 100) {
       return {
-        error:
-          "Location is too long",
+        error: "Location is too long",
       };
     }
 
-    // Create home first
-    const home =
-      await prisma.home.create({
-        data: {
-          name,
-          location,
-          userId: user.id,
-        },
-      });
-
-    // Auto create hidden meter
-    await prisma.meter.create({
+    await prisma.home.create({
       data: {
-        homeId: home.id,
-
-        meterNumber: `AUTO-${Date.now()}`,
-
-        nickname: "Main Meter",
+        name,
+        location,
+        userId: user.id,
       },
     });
 
@@ -87,9 +68,7 @@ export async function createHome(
     console.error(error);
 
     return {
-      error:
-        "Failed to create home",
+      error: "Failed to create home",
     };
   }
 }
-

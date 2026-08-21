@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Loader2, Zap, BarChart3, ShieldCheck } from "lucide-react";
+import {
+  motion,
+  AnimatePresence,
+  type Variants,
+} from "framer-motion";import { ArrowRight, Loader2, Zap, BarChart3, ShieldCheck } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -33,10 +36,20 @@ export default function LoginPage() {
     }
   }
 
-  const fadeUp = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
-  };
+const fadeUp: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 20,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut",
+    },
+  },
+};
 
   const staggerContainer = {
     hidden: { opacity: 0 },
