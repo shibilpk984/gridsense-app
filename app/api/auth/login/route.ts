@@ -89,9 +89,7 @@ export async function POST(req: Request) {
         httpOnly: true,
 
         // HTTPS production only
-        secure:
-          process.env.NODE_ENV ===
-          "production",
+        secure: process.env.COOKIE_SECURE === "true",
 
         sameSite: "lax",
 
